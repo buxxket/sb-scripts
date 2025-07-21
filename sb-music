@@ -1,0 +1,62 @@
+#!/bin/sh
+
+MUSIC_PLAYERS="mpd strawberry vlc"
+META="{{ artist }} - {{ title }}"
+
+show_volume_bar() {
+    local vol=$1
+    dunstify -u low \
+        -h string:x-dunst-stack-tag:volume \
+        -h int:value:$vol \
+        "$PLAYER volume: $vol%"
+}
+
+get_volume () {
+	local volstr=$(playerctl --player=$1 volume)
+	echo "$(printf "%.0f" "$(echo "$volstr * 100" | bc)")"
+}
+
+if [ -n "$BLOCK_BUTTON" ]; then
+    case $BLOCK_BUTTON in
+    	1) for PLAYER in $MUSIC_PLAYERS; do
+ 	       	[ "$(playerctl --player=$PLAYER status 2>/dev/null)" = "No players found" ] && continue
+    	    playerctl play-pause --player $PLAYER
+    	done ;;
+    	2) for PLAYER in $MUSIC_PLAYERS; do
+ 	       	[ "$(playerctl --player=$PLAYER status 2>/dev/null)" = "No players found" ] && continue
+    	    playerctl previous --player $PLAYER
+    	done ;;
+    	3) for PLAYER in $MUSIC_PLAYERS; do
+ 	       	[ "$(playerctl --player=$PLAYER status 2>/dev/null)" = "No players found" ] && continue
+    	    playerctl next --player $PLAYER
+    	done ;;
+		4) for PLAYER in $MUSIC_PLAYERS; do
+        	if [ "$(playerctl --player=$PLAYER status 2>/dev/null)" != "No players found" ]; then
+	           playerctl --player=$PLAYER volume 0.01+ &&\
+	           show_volume_bar "$(get_volume $PLAYER)"
+           	fi
+		done ;;
+        5) for PLAYER in $MUSIC_PLAYERS; do
+        	if [ "$(playerctl --player=$PLAYER status 2>/dev/null)" != "No players found" ]; then
+	           playerctl --player=$PLAYER volume 0.01- &&\
+	           show_volume_bar "$(get_volume $PLAYER)"
+           	fi
+        done ;;
+    	6) kitty --class floatkitty micro ~/suckless/dwmblocks/sb-scripts/sb-music ;;
+    esac
+fi
+
+if [[ $(cat /tmp/sb_m30_music_status) == "0" ]] ; then
+	for PLAYER in $MUSIC_PLAYERS; do
+		PLAYERICON="[$PLAYER]"
+		STATUS="$(timeout 1 playerctl --player $PLAYER status 2>/dev/null)"
+		[ "$(playerctl --player=$PLAYER status 2>/dev/null)" = "No players found" ] && continue
+		if [ "$STATUS" = "Playing" ]; then
+		    SONG="$(timeout 1 playerctl metadata --player $PLAYER --format "$META" 2>/dev/null)"
+		    [ -n "$SONG" ] && echo " $PLAYERICON $SONG "
+		elif [ "$STATUS" = "Paused" ]; then
+		    SONG="$(timeout 1 playerctl metadata --player $PLAYER --format "$META" 2>/dev/null)"
+		    [ -n "$SONG" ] && echo " [paused] $PLAYERICON $SONG "
+		fi
+	done
+fi
