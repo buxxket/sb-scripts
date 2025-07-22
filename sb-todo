@@ -1,25 +1,39 @@
 #!/bin/bash
 
-todo_file="${XDG_DATA_HOME:-$HOME/.local/share}/todo.md"
+# Config
+todo_file="${XDG_DATA_HOME:-$HOME/.todo}/todo.md"
 width=40
 state_file="/tmp/dwm_todo_scroll.pos"
 log_file="/tmp/dwm_scroll_debug.log"
 
+# Exit early if no TODO file
 if [[ ! -f "$todo_file" ]]; then
-  echo "No TODO file " && exit 0
+  echo "No TODO file" && exit 0
 fi
 
-# Ignore comment lines starting with # (optional whitespace before #)
-text=$(grep -v '^\s*#' "$todo_file" | sed ':a;N;$!ba;s/\n/ ... /g')
+# Read and clean TODO text: remove comments, blank lines, trim whitespace
+text=$(awk '
+  /^[[:space:]]*#/ { next }   # skip comment lines
+  /^[[:space:]]*$/ { next }   # skip blank lines
+  { items = (items ? items " ... " : "") $0 }
+  END { print items }
+' "$todo_file")
+text=$(echo "$text" | xargs)  # trim leading/trailing whitespace
 
-length=${#text}
-
-# If text fits within width, print full text and exit (no scroll)
-if (( length <= width )); then
-  echo -n "$text "
+# If nothing left, exit with no output
+if [[ -z "$text" ]]; then
   exit 0
 fi
 
+length=${#text}
+
+# If it fits, print the full string with trailing space and exit
+if (( length <= width )); then
+  echo "$text "
+  exit 0
+fi
+
+# Prepare scrolling text (looped)
 scroll_text="$text    $text"
 
 # Load or init scroll position
@@ -29,25 +43,24 @@ else
   pos=0
 fi
 
-# Handle dwmblocks button input
+# Handle dwmblocks mouse input
 case $BLOCK_BUTTON in
-  1)  pos=0 ;;
-  3)  notify-send "$(cat $todo_file)" ;;
-  6)  kitty --class floatkitty micro $todo_file ;;
+  1)  pos=0 ;;  # Left click resets scroll
+  3)  notify-send "$(cat "$todo_file")" ;;  # Right click shows TODOs
+  6)  kitty --class floatkitty micro "$todo_file" ;;  # Ctrl + Scroll (button 6) opens editor
 esac
 
+# Advance scroll position on normal update
 if [[ -z "$BLOCK_BUTTON" ]]; then
   ((pos++))
 fi
 
-# Wrap around
+# Wrap scroll position
 (( pos < 0 )) && pos=$((length - 1))
 (( pos >= length + 4 )) && pos=0
 
-# Save state
-echo "$pos" > "$state_file" || echo "Failed to write" >> "$log_file"
+# Save scroll position
+echo "$pos" > "$state_file" || echo "Failed to write state" >> "$log_file"
 
-# Output scrolled segment
+# Output the scrolling portion
 echo -n "${scroll_text:pos:width} "
-
-
