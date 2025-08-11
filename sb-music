@@ -42,11 +42,11 @@ if [ -n "$BLOCK_BUTTON" ]; then
 	           show_volume_bar "$(get_volume $PLAYER)"
            	fi
         done ;;
-    	6) kitty --class floatkitty micro ~/suckless/dwmblocks/sb-scripts/sb-music ;;
+    	6) kitty --class floatkitty micro ~/suckless/sb-scripts/sb-music ;;
     esac
 fi
 
-if [[ $(cat /tmp/sb_m30_music_status) == "0" ]] ; then
+# if [[ $(cat /tmp/sb_m30_music_status) == "0" ]] ; then
 	for PLAYER in $MUSIC_PLAYERS; do
 		PLAYERICON="[$PLAYER]"
 		STATUS="$(timeout 1 playerctl --player $PLAYER status 2>/dev/null)"
@@ -59,4 +59,4 @@ if [[ $(cat /tmp/sb_m30_music_status) == "0" ]] ; then
 		    [ -n "$SONG" ] && echo " [paused] $PLAYERICON $SONG "
 		fi
 	done
-fi
+# fi
