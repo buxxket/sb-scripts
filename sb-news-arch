@@ -1,0 +1,96 @@
+#!/bin/bash
+
+DB="$HOME/.cache/news_read_arch.db"
+CACHE_FILE="$HOME/.cache/news_feed_arch.xml"
+CACHE_TTL=1800
+WIDTH=80
+STATE_FILE="/tmp/dwm_news_scroll_arch.pos"
+
+# Check if DB exists
+if [[ ! -f "$DB" ]]; then
+  echo " No news DB "
+  exit 0
+fi
+
+# Fetch unread headlines from DB + feed (cached)
+HEADLINES=$(python3 - "$DB" "$CACHE_FILE" "$CACHE_TTL" <<'EOF'
+import sys, os, time, sqlite3, requests, feedparser
+
+db, cache_file, cache_ttl = sys.argv[1], sys.argv[2], int(sys.argv[3])
+
+def fetch_feed(url, cache_file, cache_ttl):
+    headers = {"User-Agent": "news-block/1.0"}
+    use_cache = False
+    if os.path.exists(cache_file):
+        mtime = os.path.getmtime(cache_file)
+        if time.time() - mtime < cache_ttl:
+            use_cache = True
+    if use_cache:
+        with open(cache_file, "r", encoding="utf-8") as f:
+            return f.read()
+    else:
+        url = "https://archlinux.org/feeds/news/"
+        r = requests.get(url, headers=headers)
+        r.raise_for_status()
+        with open(cache_file, "w", encoding="utf-8") as f:
+            f.write(r.text)
+        return r.text
+
+conn = sqlite3.connect(db)
+cur = conn.cursor()
+
+feed_data = fetch_feed("https://archlinux.org/feeds/news/", cache_file, cache_ttl)
+feed = feedparser.parse(feed_data)
+
+def get_guid(e):
+    return getattr(e, "id", None) or getattr(e, "link", None) or getattr(e, "title", "")
+
+headlines = []
+for e in feed.entries:
+    guid = get_guid(e)
+    if not cur.execute("SELECT 1 FROM read_guids WHERE guid=?", (guid,)).fetchone():
+        headlines.append(getattr(e, "title", "(no title)"))
+
+if not headlines:
+    print("")
+else:
+    print(" ... ".join(headlines))
+EOF
+)
+
+if [[ -z "$HEADLINES" ]]; then
+  echo ""
+  exit 0
+fi
+
+# Scroll logic
+
+length=${#HEADLINES}
+
+if (( length <= WIDTH )); then
+  echo "  : $HEADLINES "
+  exit 0
+fi
+
+scroll_text="$HEADLINES    $HEADLINES"
+
+if [[ -f "$STATE_FILE" ]]; then
+  pos=$(<"$STATE_FILE")
+else
+  pos=0
+fi
+
+case $BLOCK_BUTTON in
+  1) kitty --class floatkitty zsh -c 'news' ;;
+esac
+
+if [[ -z "$BLOCK_BUTTON" ]]; then
+  ((pos++))
+fi
+
+(( pos < 0 )) && pos=$((length - 1))
+(( pos >= length + 4 )) && pos=0
+
+echo -n "  : ${scroll_text:pos:WIDTH} "
+
+echo "$pos" > "$STATE_FILE"
