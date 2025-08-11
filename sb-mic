@@ -2,7 +2,8 @@
 
 PIDFILE="$HOME/.mic-tone-keepalive.pid"
 PLAY_CMD="play -nq synth sin 1"
-MIC_NAME="Scarlett Solo USB"
+# MIC_NAME="Scarlett Solo USB"
+MIC_NAME="Logitech StreamCam"
 
 # Process click events
 case $BLOCK_BUTTON in
