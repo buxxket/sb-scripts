@@ -1,0 +1,8 @@
+#!/bin/bash
+
+dir_bin="$HOME/bin"
+
+for script in sb-*; do
+	chmod +x "$script"
+	ln -sf "$PWD/$script" "$dir_bin/"
+done
