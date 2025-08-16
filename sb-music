@@ -1,62 +1,203 @@
-#!/bin/sh
+#!/bin/bash
 
-MUSIC_PLAYERS="mpd strawberry vlc"
+MUSIC_PLAYERS="chromium firefox mpd vlc"
 META="{{ artist }} - {{ title }}"
 
 show_volume_bar() {
     local vol=$1
+    local player=$2
     dunstify -u low \
         -h string:x-dunst-stack-tag:volume \
         -h int:value:$vol \
-        "$PLAYER volume: $vol%"
+        "$player volume: $vol%"
 }
 
-get_volume () {
-	local volstr=$(playerctl --player=$1 volume)
-	echo "$(printf "%.0f" "$(echo "$volstr * 100" | bc)")"
+get_volume() {
+    # $1 = playerctl player name
+    local volstr
+    volstr=$(playerctl --player="$1" volume 2>/dev/null)
+    echo "$(printf "%.0f" "$(echo "$volstr * 100" | bc)")"
 }
 
+get_wpctl_volume() {
+    # $1 = Pipewire node id
+    local volstr
+    volstr=$(wpctl get-volume "$1" 2>/dev/null | awk '{print $2}')
+    if [[ "$volstr" =~ ^0\.[0-9]+$ ]]; then
+        printf "%.0f" "$(echo "$volstr * 100" | bc -l)"
+    else
+        echo 0
+    fi
+}
+
+get_node_ids() {
+    # $1 = process binary name (e.g. firefox, youtube-music)
+    pw-dump | jq -r "
+        .[] | select(
+            .info.props.\"application.process.binary\" == \"$1\"
+            and .info.props.\"media.class\" == \"Stream/Output/Audio\"
+        ) | .id
+    "
+}
+
+volume_up_wpctl() {
+    # $1 = process binary name for node search (e.g. firefox, youtube-music)
+    for id in $(get_node_ids "$1"); do
+        wpctl set-volume "$id" 1%+
+        show_volume_bar "$(get_wpctl_volume "$id")" "$1"
+    done
+}
+
+volume_down_wpctl() {
+    # $1 = process binary name for node search
+    for id in $(get_node_ids "$1"); do
+        wpctl set-volume "$id" 1%-
+        show_volume_bar "$(get_wpctl_volume "$id")" "$1"
+    done
+}
+
+volume_up_playerctl() {
+    # $1 = playerctl player name
+    playerctl --player="$1" volume 0.01+ && \
+        show_volume_bar "$(get_volume "$1")" "$1"
+}
+
+volume_down_playerctl() {
+    # $1 = playerctl player name
+    playerctl --player="$1" volume 0.01- && \
+        show_volume_bar "$(get_volume "$1")" "$1"
+}
+
+find_priority_player() {
+    local desired_status="$1"
+    for PLAYER in $MUSIC_PLAYERS; do
+        STATUS="$(playerctl --player=$PLAYER status 2>/dev/null)"
+        if [ "$STATUS" = "$desired_status" ]; then
+            echo "$PLAYER"
+            return
+        fi
+    done
+}
+
+handle_play_pause() {
+    local TARGET_PLAYER
+    TARGET_PLAYER="$(find_priority_player Playing)"
+    [ -z "$TARGET_PLAYER" ] && TARGET_PLAYER="$(find_priority_player Paused)"
+    [ -z "$TARGET_PLAYER" ] && exit 0
+
+    STATUS="$(playerctl --player=$TARGET_PLAYER status 2>/dev/null)"
+    playerctl play-pause --player "$TARGET_PLAYER"
+
+    # If we just resumed a paused higher-priority player, pause lower-priority ones
+    if [ "$STATUS" = "Paused" ]; then
+        SKIP=1
+        for PLAYER in $MUSIC_PLAYERS; do
+            [ "$PLAYER" = "$TARGET_PLAYER" ] && SKIP=0 && continue
+            [ "$SKIP" -eq 1 ] && continue
+            STATUS2="$(playerctl --player=$PLAYER status 2>/dev/null)"
+            if [ "$STATUS2" = "Playing" ]; then
+                playerctl pause --player="$PLAYER"
+            fi
+        done
+    fi
+}
+
+handle_previous() {
+    local TARGET_PLAYER
+    TARGET_PLAYER="$(find_priority_player Playing)"
+    [ -z "$TARGET_PLAYER" ] && TARGET_PLAYER="$(find_priority_player Paused)"
+    [ -z "$TARGET_PLAYER" ] && exit 0
+    playerctl previous --player "$TARGET_PLAYER"
+}
+
+handle_next() {
+    local TARGET_PLAYER
+    TARGET_PLAYER="$(find_priority_player Playing)"
+    [ -z "$TARGET_PLAYER" ] && TARGET_PLAYER="$(find_priority_player Paused)"
+    [ -z "$TARGET_PLAYER" ] && exit 0
+    playerctl next --player "$TARGET_PLAYER"
+}
+
+handle_volume_up() {
+    local TARGET_PLAYER
+    TARGET_PLAYER="$(find_priority_player Playing)"
+    [ -z "$TARGET_PLAYER" ] && TARGET_PLAYER="$(find_priority_player Paused)"
+    [ -z "$TARGET_PLAYER" ] && exit 0
+
+    case "$TARGET_PLAYER" in
+        chromium)
+            volume_up_wpctl "youtube-music"
+            ;;
+        firefox)
+            volume_up_wpctl "firefox"
+            ;;
+        *)
+            volume_up_playerctl "$TARGET_PLAYER"
+            ;;
+    esac
+}
+
+handle_volume_down() {
+    local TARGET_PLAYER
+    TARGET_PLAYER="$(find_priority_player Playing)"
+    [ -z "$TARGET_PLAYER" ] && TARGET_PLAYER="$(find_priority_player Paused)"
+    [ -z "$TARGET_PLAYER" ] && exit 0
+
+    case "$TARGET_PLAYER" in
+        chromium)
+            volume_down_wpctl "youtube-music"
+            ;;
+        firefox)
+            volume_down_wpctl "firefox"
+            ;;
+        *)
+            volume_down_playerctl "$TARGET_PLAYER"
+            ;;
+    esac
+}
+
+handle_edit_script() {
+    kitty --class floatkitty micro ~/suckless/sb-scripts/sb-music
+}
+
+# Button handler
 if [ -n "$BLOCK_BUTTON" ]; then
     case $BLOCK_BUTTON in
-    	1) for PLAYER in $MUSIC_PLAYERS; do
- 	       	[ "$(playerctl --player=$PLAYER status 2>/dev/null)" = "No players found" ] && continue
-    	    playerctl play-pause --player $PLAYER
-    	done ;;
-    	2) for PLAYER in $MUSIC_PLAYERS; do
- 	       	[ "$(playerctl --player=$PLAYER status 2>/dev/null)" = "No players found" ] && continue
-    	    playerctl previous --player $PLAYER
-    	done ;;
-    	3) for PLAYER in $MUSIC_PLAYERS; do
- 	       	[ "$(playerctl --player=$PLAYER status 2>/dev/null)" = "No players found" ] && continue
-    	    playerctl next --player $PLAYER
-    	done ;;
-		4) for PLAYER in $MUSIC_PLAYERS; do
-        	if [ "$(playerctl --player=$PLAYER status 2>/dev/null)" != "No players found" ]; then
-	           playerctl --player=$PLAYER volume 0.01+ &&\
-	           show_volume_bar "$(get_volume $PLAYER)"
-           	fi
-		done ;;
-        5) for PLAYER in $MUSIC_PLAYERS; do
-        	if [ "$(playerctl --player=$PLAYER status 2>/dev/null)" != "No players found" ]; then
-	           playerctl --player=$PLAYER volume 0.01- &&\
-	           show_volume_bar "$(get_volume $PLAYER)"
-           	fi
-        done ;;
-    	6) kitty --class floatkitty micro ~/suckless/sb-scripts/sb-music ;;
+        1) handle_play_pause ;;
+        2) handle_previous ;;
+        3) handle_next ;;
+        4) handle_volume_up ;;
+        5) handle_volume_down ;;
+        6) handle_edit_script ;;
     esac
+    exit 0
 fi
 
-# if [[ $(cat /tmp/sb_m30_music_status) == "0" ]] ; then
-	for PLAYER in $MUSIC_PLAYERS; do
-		PLAYERICON="[$PLAYER]"
-		STATUS="$(timeout 1 playerctl --player $PLAYER status 2>/dev/null)"
-		[ "$(playerctl --player=$PLAYER status 2>/dev/null)" = "No players found" ] && continue
-		if [ "$STATUS" = "Playing" ]; then
-		    SONG="$(timeout 1 playerctl metadata --player $PLAYER --format "$META" 2>/dev/null)"
-		    [ -n "$SONG" ] && echo " $PLAYERICON $SONG "
-		elif [ "$STATUS" = "Paused" ]; then
-		    SONG="$(timeout 1 playerctl metadata --player $PLAYER --format "$META" 2>/dev/null)"
-		    [ -n "$SONG" ] && echo " [paused] $PLAYERICON $SONG "
-		fi
-	done
-# fi
+# Display currently playing or paused track info
+found_playing=0
+for PLAYER in $MUSIC_PLAYERS; do
+    PLAYERICON="[$PLAYER]"
+    [ "$PLAYER" = "chromium" ] && PLAYERICON="[yt-music]"
+    STATUS="$(timeout 1 playerctl --player $PLAYER status 2>/dev/null)"
+    [ "$STATUS" = "No players found" ] && continue
+    if [ "$STATUS" = "Playing" ]; then
+        SONG="$(timeout 1 playerctl metadata --player $PLAYER --format "$META" 2>/dev/null)"
+        [ -n "$SONG" ] && echo " $PLAYERICON $SONG "
+        found_playing=1
+        break
+    fi
+done
+
+if [ $found_playing -eq 0 ]; then
+    for PLAYER in $MUSIC_PLAYERS; do
+        PLAYERICON="[$PLAYER]"
+        [ "$PLAYER" = "chromium" ] && PLAYERICON="[yt-music]"
+        STATUS="$(timeout 1 playerctl --player $PLAYER status 2>/dev/null)"
+        [ "$STATUS" = "No players found" ] && continue
+        if [ "$STATUS" = "Paused" ]; then
+            SONG="$(timeout 1 playerctl metadata --player $PLAYER --format "$META" 2>/dev/null)"
+            [ -n "$SONG" ] && echo " [paused] $PLAYERICON $SONG "
+            break
+        fi
+    done
+fi
