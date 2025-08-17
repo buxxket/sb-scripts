@@ -6,6 +6,15 @@ width=40
 state_file="/tmp/dwm_todo_scroll.pos"
 log_file="/tmp/dwm_scroll_debug.log"
 
+# Handle dwmblocks mouse input
+case $BLOCK_BUTTON in
+  1)  pos=0 ;;  										# M1 -> reset scroll position
+  2)  kitty --class floatkitty micro "$todo_file" ;;	# M3 -> open in editor
+  3)  notify-send "$(cat "$todo_file")
+
+ *** M3 to open in editor ***" ;;						# M2 -> noti with contents
+esac
+
 # Exit early if no TODO file
 if [[ ! -f "$todo_file" ]]; then
   echo "No TODO file" && exit 0
@@ -43,12 +52,6 @@ else
   pos=0
 fi
 
-# Handle dwmblocks mouse input
-case $BLOCK_BUTTON in
-  1)  pos=0 ;;  # Left click resets scroll
-  3)  notify-send "$(cat "$todo_file")" ;;  # Right click shows TODOs
-  6)  kitty --class floatkitty micro "$todo_file" ;;  # Ctrl + Scroll (button 6) opens editor
-esac
 
 # Advance scroll position on normal update
 if [[ -z "$BLOCK_BUTTON" ]]; then
@@ -63,4 +66,4 @@ fi
 echo "$pos" > "$state_file" || echo "Failed to write state" >> "$log_file"
 
 # Output the scrolling portion
-echo -n "${scroll_text:pos:width} "
+echo -n "| ${scroll_text:pos:width}"

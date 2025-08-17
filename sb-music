@@ -195,7 +195,7 @@ for PLAYER in $MUSIC_PLAYERS; do
     [ "$STATUS" = "No players found" ] && continue
     if [ "$STATUS" = "Playing" ]; then
         SONG="$(timeout 1 playerctl metadata --player $PLAYER --format "$META" 2>/dev/null)"
-        [ -n "$SONG" ] && echo "| $PLAYERICON $SONG "
+        [ -n "$SONG" ] && echo "| $PLAYERICON $SONG"
         found_playing=1
         break
     fi
@@ -209,7 +209,7 @@ if [ $found_playing -eq 0 ]; then
         [ "$STATUS" = "No players found" ] && continue
         if [ "$STATUS" = "Paused" ]; then
             SONG="$(timeout 1 playerctl metadata --player $PLAYER --format "$META" 2>/dev/null)"
-            [ -n "$SONG" ] && echo "| [paused] $PLAYERICON $SONG "
+            [ -n "$SONG" ] && echo "| [paused] $PLAYERICON $SONG"
             break
         fi
     done

@@ -45,6 +45,6 @@ else
         $((vol >= 1)) ) icon="󰕿" ;;
         * ) icon="󰝟" ;;
     esac
-    echo "| $icon "
+    echo "| $icon"
 fi
 

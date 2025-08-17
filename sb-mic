@@ -40,11 +40,11 @@ if wpctl status | grep -q "< $MIC_NAME"; then
     if [ "$vol" != "${vol%\[MUTED\]}" ]; then
         # Mic is muted, stop tone
         stop_tone
-        echo "| 󰍭 "
+        echo "| 󰍭"
     else
         # Mic is unmuted, start tone
         start_tone
-        echo "| 󰍬 "
+        echo "| 󰍬"
     fi
 else
     # Mic not present, stop tone

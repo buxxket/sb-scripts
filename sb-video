@@ -5,5 +5,5 @@ case $BLOCK_BUTTON in
 	# 3) pwvucontrol ;;
 esac
 
-[ "$(timeout 1 fuser /dev/video* 2>/dev/null)" != '' ] && echo " 󰕧 " || echo ""
+[ "$(timeout 1 fuser /dev/video* 2>/dev/null)" != '' ] && echo " 󰕧" || echo ""
 
