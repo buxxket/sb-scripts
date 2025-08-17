@@ -5,7 +5,7 @@ DIR_MUSIC_PLAYERS="$HOME/.statusbar/music-players"
 mkdir -p "$(dirname "$DIR_MUSIC_PLAYERS")"
 touch "$DIR_MUSIC_PLAYERS"
 
-MUSIC_PLAYERS="$(cat "$DIR_MUSIC_PLAYERS")"
+MUSIC_PLAYERS="$(cat "$DIR_MUSIC_PLAYERS" | tr ',' '\n')"
 if [[ -z "$MUSIC_PLAYERS" ]]; then
     echo "No players in $DIR_MUSIC_PLAYERS"
     exit 1
