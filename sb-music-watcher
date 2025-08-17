@@ -1,0 +1,20 @@
+#!/bin/bash
+
+DIR_MUSIC_PLAYERS="$HOME/.statusbar/music-players"
+MUSIC_PLAYERS="$(cat "$DIR_MUSIC_PLAYERS")"
+if [[ -z "$MUSIC_PLAYERS" ]]; then
+    echo "No players in $DIR_MUSIC_PLAYERS"
+    exit 1
+fi
+
+while true; do
+	for PLAYER in $MUSIC_PLAYERS; do
+	    playerctl --player=$PLAYER metadata --follow 2>/dev/null | \
+	    while read -r line; do
+	        # Optionally: filter for relevant lines here
+	        pkill -RTMIN+5 dwmblocks
+	    done
+	    # If playerctl --follow exits, wait and retry
+	    sleep 2
+    done
+done

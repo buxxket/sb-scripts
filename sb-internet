@@ -1,5 +1,7 @@
 #!/bin/sh
 
+EN_SPACE=" "
+
 case $BLOCK_BUTTON in
 	1) kitty --class floatkitty nmtui ;;
 	2) [ -n "$(cat /sys/class/net/wg0/operstate 2>/dev/null)" ] && sudo wg-quick down wg0 || sudo wg-quick up wg0 ;;
@@ -16,7 +18,7 @@ esac
 # Wi-Fi
 if [ "$(cat /sys/class/net/wlan0/operstate 2>/dev/null)" = 'up' ] ; 
 then
-    [ -n "$(cat /sys/class/net/wg0/operstate 2>/dev/null)" ] && wifiicon="󱚿 " || wifiicon="󰖩 "
+    [ -n "$(cat /sys/class/net/wg0/operstate 2>/dev/null)" ] && wifiicon="󱚿" || wifiicon="󰖩"
 else
     wifiicon=""
 fi
@@ -24,9 +26,9 @@ fi
 # Ethernet
 if [ "$(cat /sys/class/net/enp5s0/operstate 2>/dev/null)" = 'up' ] || [ "$(cat /sys/class/net/enp7s0/operstate 2>/dev/null)" = 'up' ]
 then
-    [ -n "$(cat /sys/class/net/wg0/operstate 2>/dev/null)" ] && ethericon="󰈁 " || ethericon="󰈁 "
+    [ -n "$(cat /sys/class/net/wg0/operstate 2>/dev/null)" ] && ethericon="󰈁$EN_SPACE" || ethericon="󰈁$EN_SPACE"
 else
-    ethericon="󰈂 "
+    ethericon="󰈂$EN_SPACE"
 fi
 
-printf " %s%s \n" "$ethericon" "$wifiicon"
+echo "| $ethericon$wifiicon$EN_SPACE$EN_SPACE"

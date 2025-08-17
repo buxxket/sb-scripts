@@ -9,5 +9,5 @@ esac
 
 STATUS_FILE="/tmp/sd_sync_status"
 if [ -s "$STATUS_FILE" ]; then
-     echo "$(cat $STATUS_FILE) "
+     echo "| $(cat $STATUS_FILE) "
 fi

@@ -20,27 +20,31 @@ get_vol() {
     fi
 }
 
+refresh_dwmblocks() {
+    pkill -RTMIN+7 dwmblocks
+}
+
+case $BLOCK_BUTTON in
+    1) wpctl set-mute $SPEAKER_ID toggle && get_vol && refresh_dwmblocks ;;
+    3) pwvucontrol && refresh_dwmblocks ;;
+    4) wpctl set-volume $SPEAKER_ID 0.05+ && get_vol && [ "$vol" != "muted" ] && show_volume_bar "$vol" && refresh_dwmblocks ;;
+    5) wpctl set-volume $SPEAKER_ID 0.05- && get_vol && [ "$vol" != "muted" ] && show_volume_bar "$vol" && refresh_dwmblocks ;;
+    6) kitty --class floatkitty micro ~/suckless/dwmblocks/sb-scripts/sb-volume ;;
+esac
+
 # Get initial volume state
 get_vol
 
 # Display appropriate icon
 if [ "$vol" = "muted" ]; then
-    echo " 󰝟 "
+    echo "| 󰝟"
 else
     case 1 in
-        $((vol >= 70)) ) icon=" 󰕾 " ;;
-        $((vol >= 30)) ) icon=" 󰖀 " ;;
-        $((vol >= 1)) ) icon=" 󰕿 " ;;
-        * ) icon=" 󰝟 " ;;
+        $((vol >= 70)) ) icon="󰕾" ;;
+        $((vol >= 30)) ) icon="󰖀" ;;
+        $((vol >= 1)) ) icon="󰕿" ;;
+        * ) icon="󰝟" ;;
     esac
-    echo "$icon"
+    echo "| $icon "
 fi
 
-# Handle mouse clicks
-case $BLOCK_BUTTON in
-    1) wpctl set-mute $SPEAKER_ID toggle && get_vol ;;
-    3) pwvucontrol ;;
-    4) wpctl set-volume $SPEAKER_ID 0.05+ && get_vol && [ "$vol" != "muted" ] && show_volume_bar "$vol" ;;
-    5) wpctl set-volume $SPEAKER_ID 0.05- && get_vol && [ "$vol" != "muted" ] && show_volume_bar "$vol" ;;
-    6) kitty --class floatkitty micro ~/suckless/dwmblocks/sb-scripts/sb-volume ;;
-esac

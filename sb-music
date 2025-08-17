@@ -1,6 +1,18 @@
 #!/bin/bash
 
-MUSIC_PLAYERS="chromium firefox mpd vlc"
+
+DIR_MUSIC_PLAYERS="$HOME/.statusbar/music-players"
+mkdir -p "$(dirname "$DIR_MUSIC_PLAYERS")"
+touch "$DIR_MUSIC_PLAYERS"
+
+MUSIC_PLAYERS="$(cat "$DIR_MUSIC_PLAYERS")"
+if [[ -z "$MUSIC_PLAYERS" ]]; then
+    echo "No players in $DIR_MUSIC_PLAYERS"
+    exit 1
+else
+	pidof -x sb-music-watcher >/dev/null 2>&1 || sb-music-watcher >/dev/null 2>&1 &
+fi
+
 META="{{ artist }} - {{ title }}"
 
 show_volume_bar() {
@@ -160,18 +172,19 @@ handle_edit_script() {
     kitty --class floatkitty micro ~/suckless/sb-scripts/sb-music
 }
 
+refresh_dwmblocks() {
+    pkill -RTMIN+5 dwmblocks
+}
+
 # Button handler
-if [ -n "$BLOCK_BUTTON" ]; then
-    case $BLOCK_BUTTON in
-        1) handle_play_pause ;;
-        2) handle_previous ;;
-        3) handle_next ;;
-        4) handle_volume_up ;;
-        5) handle_volume_down ;;
-        6) handle_edit_script ;;
-    esac
-    exit 0
-fi
+case $BLOCK_BUTTON in
+    1) handle_play_pause && refresh_dwmblocks ;;
+    2) handle_previous && refresh_dwmblocks ;;
+    3) handle_next && refresh_dwmblocks ;;
+    4) handle_volume_up && refresh_dwmblocks ;;
+    5) handle_volume_down && refresh_dwmblocks ;;
+    6) handle_edit_script && refresh_dwmblocks ;;
+esac
 
 # Display currently playing or paused track info
 found_playing=0
@@ -182,7 +195,7 @@ for PLAYER in $MUSIC_PLAYERS; do
     [ "$STATUS" = "No players found" ] && continue
     if [ "$STATUS" = "Playing" ]; then
         SONG="$(timeout 1 playerctl metadata --player $PLAYER --format "$META" 2>/dev/null)"
-        [ -n "$SONG" ] && echo " $PLAYERICON $SONG "
+        [ -n "$SONG" ] && echo "| $PLAYERICON $SONG "
         found_playing=1
         break
     fi
@@ -196,7 +209,7 @@ if [ $found_playing -eq 0 ]; then
         [ "$STATUS" = "No players found" ] && continue
         if [ "$STATUS" = "Paused" ]; then
             SONG="$(timeout 1 playerctl metadata --player $PLAYER --format "$META" 2>/dev/null)"
-            [ -n "$SONG" ] && echo " [paused] $PLAYERICON $SONG "
+            [ -n "$SONG" ] && echo "| [paused] $PLAYERICON $SONG "
             break
         fi
     done
