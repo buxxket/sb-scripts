@@ -18,7 +18,7 @@ esac
 # Wi-Fi
 if [ "$(cat /sys/class/net/wlan0/operstate 2>/dev/null)" = 'up' ] ; 
 then
-    [ -n "$(cat /sys/class/net/wg0/operstate 2>/dev/null)" ] && wifiicon="󱚿 " || wifiicon="󰖩 "
+    [ -n "$(cat /sys/class/net/wg0/operstate 2>/dev/null)" ] && wifiicon="󱚿  " || wifiicon="󰖩  "
 else
     wifiicon=""
 fi
