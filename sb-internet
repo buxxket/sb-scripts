@@ -56,4 +56,4 @@ else
 fi
 
 # Example output (customize as needed)
-echo "| ${vpnicon}${ethericon}${wifiicon}  "
+echo "| ${vpnicon}${ethericon}${wifiicon}] "

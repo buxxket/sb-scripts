@@ -6,4 +6,4 @@ case $BLOCK_BUTTON in
 esac
 
 
-echo "| $(date "+%H:%M:%S | %Y %b %d - %a")"
+echo "| $(date "+%H:%M:%S | %Y %b %d - %a") ]"
