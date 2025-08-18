@@ -36,7 +36,7 @@ stop_tone() {
 vol="$(timeout 1 wpctl get-volume @DEFAULT_SOURCE@ 2>/dev/null)"
 
 # Check if Scarlett Solo USB is present in wpctl status
-if wpctl status | grep -q "< $MIC_NAME"; then
+if wpctl status | grep -q "<"; then
     if [ "$vol" != "${vol%\[MUTED\]}" ]; then
         # Mic is muted, stop tone
         stop_tone
