@@ -1,34 +1,59 @@
 #!/bin/sh
 
-EN_SPACE=" "
-
 case $BLOCK_BUTTON in
-	1) kitty --class floatkitty nmtui ;;
-	2) [ -n "$(cat /sys/class/net/wg0/operstate 2>/dev/null)" ] && sudo wg-quick down wg0 || sudo wg-quick up wg0 ;;
-	3) notify-send "M1 to open nmtui
+    1) kitty --class floatkitty nmtui ;;
+    2) [ -n "$(cat /sys/class/net/wg0/operstate 2>/dev/null)" ] && sudo wg-quick down wg0 || sudo wg-quick up wg0 ;;
+    3) notify-send "M1 to open nmtui
 
 M3 to restart wg" ;;
-   	6) kitty --class floatkitty micro ~/suckless/dwmblocks/sb-scripts/sb-internet ;;
+    6) kitty --class floatkitty micro ~/suckless/dwmblocks/sb-scripts/sb-internet ;;
 esac
 
-# Wifi signal strength
-# if [ "$(cat /sys/class/net/wlan0/operstate 2>/dev/null)" = 'up' ] ; then
-# 	wifiicon="$(awk '/^\s*w/ { print "󰒢", int($3 * 100 / 70) "% " }' /proc/net/wireless)"
+# VPN status
+if [ -n "$(cat /sys/class/net/wg0/operstate 2>/dev/null)" ]; then
+    if ping 192.168.1.1 -c 1 > /dev/null 2>&1; then
+        vpnicon="󰌾 "
+    else
+        vpnicon="󱎛 "
+    fi
+else
+    vpnicon=""
+fi
+
+# Wi-Fi symbols (online and offline sets)
+wifi_syms_online=(󰤯 󰤟 󰤢 󰤥 󰤨 )
+wifi_syms_offline=(󰤫 󰤠 󰤣 󰤦 󰤩)
 
 # Wi-Fi
-if [ "$(cat /sys/class/net/wlan0/operstate 2>/dev/null)" = 'up' ] ; 
-then
-    [ -n "$(cat /sys/class/net/wg0/operstate 2>/dev/null)" ] && wifiicon="󱚿  " || wifiicon="󰖩  "
+if [ "$(cat /sys/class/net/wlan0/operstate 2>/dev/null)" = 'up' ]; then
+    # Get signal quality (0-70)
+    signal=$(awk '/^\s*w/ {print int($3)}' /proc/net/wireless)
+    if [ -n "$signal" ]; then
+        symbol_idx=$(( quality * 5 / 71 ))
+        [ $symbol_idx -gt 4 ] && symbol_idx=4
+        [ $symbol_idx -lt 0 ] && symbol_idx=0
+        if ping 8.8.8.8 -c 1 > /dev/null 2>&1; then
+            wifiicon="${wifi_syms_online[$symbol_idx]} "
+        else
+            wifiicon="${wifi_syms_offline[$symbol_idx]} "
+        fi
+    else
+        wifiicon=""
+    fi
 else
     wifiicon=""
 fi
 
 # Ethernet
-if [ "$(cat /sys/class/net/enp5s0/operstate 2>/dev/null)" = 'up' ] || [ "$(cat /sys/class/net/enp7s0/operstate 2>/dev/null)" = 'up' ]
-then
-    [ -n "$(cat /sys/class/net/wg0/operstate 2>/dev/null)" ] && ethericon="󰈁" || ethericon="󰈁 "
+if grep -q '^up$' /sys/class/net/en*/operstate 2>/dev/null; then
+    if ping 8.8.8.8 -c 1 > /dev/null 2>&1; then
+        ethericon="󰈁 "
+    else
+        ethericon="󰈁!"
+    fi
 else
-    ethericon="󰈂 "
+    ethericon=""
 fi
 
-echo "| $ethericon$wifiicon"
+# Example output (customize as needed)
+echo "| ${vpnicon}${ethericon}${wifiicon}  "
