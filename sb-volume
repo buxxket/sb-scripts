@@ -1,6 +1,9 @@
 #!/bin/sh
 
-SPEAKER_ID="@DEFAULT_SINK@"
+SPEAKER_ID="$(wpctl status | grep speaker | grep -oP '\d+(?=\.)' | head -1)"
+if [ -z "$SPEAKER_ID" ]; then
+  SPEAKER_ID="@DEFAULT_SINK@"
+fi
 
 show_volume_bar() {
     local vol=$1
