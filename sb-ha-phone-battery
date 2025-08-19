@@ -1,0 +1,22 @@
+#!/bin/bash
+
+HA_URL="$(cat $HOME/.ha/url)"
+TOKEN="$(cat $HOME/.ha/token)"
+ENTITY_ID1="sensor.adam_phone_battery_level"
+ENTITY_ID2="sensor.adam_phone_battery_state"
+
+level=$(curl -s -H "Authorization: Bearer $TOKEN" \
+	-H "Content-Type: application/json" \
+	"$HA_URL/api/states/$ENTITY_ID1" | jq -r '.state')
+
+state=$(curl -s -H "Authorization: Bearer $TOKEN" \
+	-H "Content-Type: application/json" \
+	"$HA_URL/api/states/$ENTITY_ID2" | jq -r '.state')
+
+if [[ "$state" == "charging" ]]; then
+	icon="󱎗"
+else
+	icon=""
+fi
+
+echo "$icon $level%"
