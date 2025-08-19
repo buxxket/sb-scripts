@@ -13,6 +13,7 @@ while true; do
 	    while read -r line; do
 	        # Optionally: filter for relevant lines here
 	        pkill -RTMIN+5 dwmblocks
+	        echo "" > /tmp/dwm_music_scroll.pos
 	    done
 	    # If playerctl --follow exits, wait and retry
 	    sleep 2

@@ -48,8 +48,8 @@ else
 fi
 
 if [[ -n "$micIcon" && -n "$vidIcon" ]]; then
-	echo "[ "$vidIcon" | "$micIcon" ] |"
+	echo "[ "$vidIcon" | "$micIcon" ]"
 	exit 0
 elif [[ -n "$micIcon" || -n "$vidIcon" ]]; then
-	echo "[ "$vidIcon""$micIcon" ] |"
+	echo "[ "$vidIcon""$micIcon" ]"
 fi

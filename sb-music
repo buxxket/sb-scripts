@@ -1,5 +1,8 @@
 #!/bin/bash
 
+width=25
+state_file="/tmp/dwm_music_scroll.pos"
+log_file="/tmp/dwm_music_scroll_debug.log"
 
 DIR_MUSIC_PLAYERS="$HOME/.statusbar/music-players"
 mkdir -p "$(dirname "$DIR_MUSIC_PLAYERS")"
@@ -184,33 +187,97 @@ case $BLOCK_BUTTON in
     4) handle_volume_up && refresh_dwmblocks ;;
     5) handle_volume_down && refresh_dwmblocks ;;
     6) handle_edit_script && refresh_dwmblocks ;;
+    7) echo "" > $state_file && refresh_dwmblocks ;;
 esac
 
 # Display currently playing or paused track info
 found_playing=0
 for PLAYER in $MUSIC_PLAYERS; do
-    PLAYERICON="[$PLAYER]"
+    PLAYERICON="$PLAYER"
     [ "$PLAYER" = "chromium" ] && PLAYERICON="[yt-music]"
     STATUS="$(timeout 1 playerctl --player $PLAYER status 2>/dev/null)"
     [ "$STATUS" = "No players found" ] && continue
     if [ "$STATUS" = "Playing" ]; then
         SONG="$(timeout 1 playerctl metadata --player $PLAYER --format "$META" 2>/dev/null)"
-        [ -n "$SONG" ] && echo "$PLAYERICON $SONG |"
-        found_playing=1
-        break
+        # --------------
+        if [[ -z "$SONG" ]]; then
+          exit 0
+        fi
+
+        length=${#SONG}
+
+		if (( length <= width )); then
+		  # Calculate padding
+		  left_pad=$(( (width - length) / 2 ))
+		  right_pad=$(( width - length - left_pad ))
+		  printf -v padded_song "%*s%s%*s" "$left_pad" "" "$SONG" "$right_pad" ""
+		  echo "[ $PLAYERICON: $padded_song ]"
+		  found_playing=1
+		  break
+		fi
+
+		scroll_text="~ $SONG  ~ $SONG"
+
+		if [[ -f "$state_file" ]]; then
+		  pos=$(<"$state_file")
+		else
+		  pos=0
+		fi
+
+		if [[ -z "$BLOCK_BUTTON" ]]; then
+		  ((pos++))
+		fi
+
+		(( pos < 0 )) && pos=$((length - 1))
+		(( pos >= length + 4 )) && pos=0
+
+		echo "$pos" > "$state_file" || echo "Failed to write state" >> "$log_file"
+
+		echo -n "[ $PLAYERICON: ${scroll_text:pos:width} ]"
+
+		found_playing=1
+        # --------------
     fi
 done
 
 if [ $found_playing -eq 0 ]; then
     for PLAYER in $MUSIC_PLAYERS; do
-        PLAYERICON="[$PLAYER]"
+        PLAYERICON="$PLAYER"
         [ "$PLAYER" = "chromium" ] && PLAYERICON="[yt-music]"
         STATUS="$(timeout 1 playerctl --player $PLAYER status 2>/dev/null)"
         [ "$STATUS" = "No players found" ] && continue
         if [ "$STATUS" = "Paused" ]; then
             SONG="$(timeout 1 playerctl metadata --player $PLAYER --format "$META" 2>/dev/null)"
-            [ -n "$SONG" ] && echo "[paused] $PLAYERICON $SONG |"
-            break
+			# --------------
+	        if [[ -z "$SONG" ]]; then
+	          exit 0
+	        fi
+	        
+	        paused_width=$(( width - 9 ))
+	        
+	        length=${#SONG}
+	        
+	        if (( length <= paused_width )); then
+	          # Calculate padding
+	          left_pad=$(( (paused_width - length) / 2 ))
+	          right_pad=$(( paused_width - length - left_pad ))
+	          printf -v padded_song "%*s%s%*s" "$left_pad" "" "$SONG" "$right_pad" ""
+	          echo "[ $PLAYERICON: $padded_song ]"
+	          found_playing=1
+	          break
+	        fi
+	        
+	        scroll_text="~ $SONG  ~ $SONG"
+	        
+	        if [[ -f "$state_file" ]]; then
+	          pos=$(<"$state_file")
+	          pos=$(( pos + 10 ))
+	        else
+	          pos=0
+	        fi
+	        
+	        echo -n "[ $PLAYERICON: [paused] ${scroll_text:pos:paused_width} ]"
+	        # --------------
         fi
     done
 fi
