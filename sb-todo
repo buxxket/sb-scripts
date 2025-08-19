@@ -38,7 +38,7 @@ length=${#text}
 
 # If it fits, print the full string with trailing space and exit
 if (( length <= width )); then
-  echo "$text"
+  echo "$text |"
   exit 0
 fi
 
@@ -66,4 +66,4 @@ fi
 echo "$pos" > "$state_file" || echo "Failed to write state" >> "$log_file"
 
 # Output the scrolling portion
-echo -n "| ${scroll_text:pos:width}"
+echo -n "[ ${scroll_text:pos:width} ] |"
