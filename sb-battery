@@ -6,11 +6,6 @@ esac
 for battery in /sys/class/power_supply/BAT?*; do
 	status_raw="$(cat "$battery/status" 2>&1)"
 	level_raw="$(cat "$battery/capacity" 2>&1)"
-	
-	case status_raw in
-		"Charging") status_icon="󰂄" && echo "$status_icon $level_raw%" && exit 0 ;;
-		*) "" ;;
-	esac
 
 	case $level_raw in
 	  100)    level_icon="󰁹" ;;         # 100%
@@ -25,6 +20,11 @@ for battery in /sys/class/power_supply/BAT?*; do
 	  1[0-9]) level_icon="󰁺" ;;         # 10-19%
 	  [0-9])  level_icon="󰂎" ;;         # 0-9%
 	  *)      level_icon="" ;;          # Unknown/invalid
+	esac
+	
+	case $status_raw in
+		"Charging") level_icon="󰂄" ;;
+		*) "" ;;
 	esac
 
 	echo "[ $level_icon $level_raw% ]"
