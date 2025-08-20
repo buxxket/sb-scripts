@@ -58,7 +58,7 @@ get_node_ids() {
 volume_up_wpctl() {
     # $1 = process binary name for node search (e.g. firefox, youtube-music)
     for id in $(get_node_ids "$1"); do
-        wpctl set-volume "$id" 1%+
+        wpctl set-volume "$id" 10%+
         show_volume_bar "$(get_wpctl_volume "$id")" "$1"
     done
 }
@@ -66,20 +66,20 @@ volume_up_wpctl() {
 volume_down_wpctl() {
     # $1 = process binary name for node search
     for id in $(get_node_ids "$1"); do
-        wpctl set-volume "$id" 1%-
+        wpctl set-volume "$id" 10%-
         show_volume_bar "$(get_wpctl_volume "$id")" "$1"
     done
 }
 
 volume_up_playerctl() {
     # $1 = playerctl player name
-    playerctl --player="$1" volume 0.01+ && \
+    playerctl --player="$1" volume 0.1+ && \
         show_volume_bar "$(get_volume "$1")" "$1"
 }
 
 volume_down_playerctl() {
     # $1 = playerctl player name
-    playerctl --player="$1" volume 0.01- && \
+    playerctl --player="$1" volume 0.1- && \
         show_volume_bar "$(get_volume "$1")" "$1"
 }
 
