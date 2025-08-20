@@ -2,6 +2,15 @@
 
 HA_URL="$(cat $HOME/.ha/url)"
 TOKEN="$(cat $HOME/.ha/token)"
+
+if [[ -z "$HA_URL" ]]; then
+	echo "No HA_URL file"
+	exit 0
+elif [[ -z "$TOKEN" ]]; then
+	echo "No TOKEN file"
+	exit 0
+fi
+
 ENTITY_ID1="sensor.adam_phone_battery_level"
 ENTITY_ID2="sensor.adam_phone_battery_state"
 
