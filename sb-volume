@@ -40,7 +40,7 @@ get_vol
 
 # Display appropriate icon
 if [ "$vol" = "muted" ]; then
-    echo "| 󰝟"
+    echo "[ 󰝟"
 else
     case 1 in
         $((vol >= 70)) ) icon="󰕾" ;;
