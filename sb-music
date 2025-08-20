@@ -199,7 +199,6 @@ for PLAYER in $MUSIC_PLAYERS; do
     [ "$STATUS" = "No players found" ] && continue
     if [ "$STATUS" = "Playing" ]; then
         SONG="$(timeout 1 playerctl metadata --player $PLAYER --format "$META" 2>/dev/null)"
-        # --------------
         if [[ -z "$SONG" ]]; then
           break
         fi
@@ -237,7 +236,6 @@ for PLAYER in $MUSIC_PLAYERS; do
 
 		found_playing=1
 		break
-        # --------------
     fi
 done
 
@@ -249,39 +247,39 @@ if [ $found_playing -eq 0 ]; then
         [ "$STATUS" = "No players found" ] && continue
         if [ "$STATUS" = "Paused" ]; then
             SONG="$(timeout 1 playerctl metadata --player $PLAYER --format "$META" 2>/dev/null)"
-			# --------------
 	        if [[ -z "$SONG" ]]; then
 	          break
 	        fi
 	        
-	        paused_width=$(( width - 9 ))
-	        
 	        length=${#SONG}
 	        
-	        if (( length <= paused_width )); then
-	          # Calculate padding
-	          left_pad=$(( (paused_width - length) / 2 ))
-	          right_pad=$(( paused_width - length - left_pad ))
-	          printf -v padded_song "%*s%s%*s" "$left_pad" "" "$SONG" "$right_pad" ""
-	          echo "[ $PLAYERICON: $padded_song ]"
-   	          found_playing=1
-	          break
+	        if (( length <= width )); then
+	            # Calculate padding
+	            left_pad=$(( (width - length) / 2 ))
+	            right_pad=$(( width - length - left_pad ))
+	            printf -v padded_song "%*s%s%*s" "$left_pad" "" "$SONG" "$right_pad" ""
+	            trimmed_song="${padded_song:4}"   # Remove the first 3 chars (for pause icon)
+	            echo "[ $PLAYERICON: [󰏤] $trimmed_song ]"
+	            found_playing=1
+	            break
 	        fi
 	        
 	        scroll_text="~ $SONG  ~ $SONG"
 	        
 	        if [[ -f "$state_file" ]]; then
 	          pos=$(<"$state_file")
-	          pos=$(( pos + 10 ))
 	        else
 	          pos=0
 	        fi
-	        
-	        echo -n "[ $PLAYERICON: [paused] ${scroll_text:pos:paused_width} ]"
+
+			trimmed_song="${scroll_text:pos:width}"
+			trimmed_song="${trimmed_song:4}"
+			
+	        echo -n "[ $PLAYERICON: [󰏤] $trimmed_song ]"
 
 	        found_playing=1
 	        break
-	        # --------------
         fi
     done
 fi
+
