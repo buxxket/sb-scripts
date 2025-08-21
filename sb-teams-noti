@@ -1,0 +1,11 @@
+#!/bin/sh
+win_id=$(xdotool search --name "Microsoft Teams" | head -n1)
+if [ -z "$win_id" ]; then
+    exit 0
+else
+	title=$(xprop -id "$win_id" WM_NAME | cut -d '"' -f 2)
+	if echo "$title" | grep -qE '^\([0-9]+\)'; then
+	    count=$(echo "$title" | grep -oE '^\([0-9]+' | tr -d '(')
+	    echo "[ 󰊻 $count ]"
+	fi
+fi
