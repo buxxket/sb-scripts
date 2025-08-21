@@ -33,9 +33,9 @@ if [ "$(cat /sys/class/net/wlan0/operstate 2>/dev/null)" = 'up' ]; then
         [ $symbol_idx -gt 4 ] && symbol_idx=4
         [ $symbol_idx -lt 0 ] && symbol_idx=0
         if ping 8.8.8.8 -c 1 > /dev/null 2>&1; then
-            wifiicon="${wifi_syms_online[$symbol_idx]}  "
+            wifiicon="${wifi_syms_online[$symbol_idx]} "
         else
-            wifiicon="${wifi_syms_offline[$symbol_idx]}  "
+            wifiicon="${wifi_syms_offline[$symbol_idx]} "
         fi
     else
         wifiicon=""
@@ -56,4 +56,4 @@ else
 fi
 
 # Example output (customize as needed)
-echo "| ${vpnicon}${ethericon}${wifiicon}] "
+echo "| ${ethericon}${wifiicon}${vpnicon}] "
