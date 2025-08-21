@@ -3,29 +3,31 @@
 case $BLOCK_BUTTON in
 esac
 
-for battery in /sys/class/power_supply/BAT?*; do
-	status_raw="$(cat "$battery/status" 2>&1)"
-	level_raw="$(cat "$battery/capacity" 2>&1)"
-	
-	case status_raw in
-		"Charging") status_icon="󰂄" && echo "$status_icon $level_raw%" && exit 0 ;;
-		*) "" ;;
-	esac
+if [ -d /sys/class/power_supply/BAT?* ]; then
+	for battery in /sys/class/power_supply/BAT?*; do
+		status_raw="$(cat "$battery/status" 2>&1)"
+		level_raw="$(cat "$battery/capacity" 2>&1)"
+		
+		case status_raw in
+			"Charging") status_icon="󰂄" && echo "$status_icon $level_raw%" && exit 0 ;;
+			*) "" ;;
+		esac
 
-	case $level_raw in
-	  100)    level_icon="󰁹" ;;         # 100%
-	  9[0-9]) level_icon="󰂂" ;;         # 90-99%
-	  8[0-9]) level_icon="󰂁" ;;         # 80-89%
-	  7[0-9]) level_icon="󰂀" ;;         # 70-79%
-	  6[0-9]) level_icon="󰁿" ;;         # 60-69%
-	  5[0-9]) level_icon="󰁾" ;;         # 50-59%
-	  4[0-9]) level_icon="󰁽" ;;         # 40-49%
-	  3[0-9]) level_icon="󰁼" ;;         # 30-39%
-	  2[0-9]) level_icon="󰁻" ;;         # 20-29%
-	  1[0-9]) level_icon="󰁺" ;;         # 10-19%
-	  [0-9])  level_icon="󰂎" ;;         # 0-9%
-	  *)      level_icon="" ;;          # Unknown/invalid
-	esac
+		case $level_raw in
+		  100)    level_icon="󰁹" ;;         # 100%
+		  9[0-9]) level_icon="󰂂" ;;         # 90-99%
+		  8[0-9]) level_icon="󰂁" ;;         # 80-89%
+		  7[0-9]) level_icon="󰂀" ;;         # 70-79%
+		  6[0-9]) level_icon="󰁿" ;;         # 60-69%
+		  5[0-9]) level_icon="󰁾" ;;         # 50-59%
+		  4[0-9]) level_icon="󰁽" ;;         # 40-49%
+		  3[0-9]) level_icon="󰁼" ;;         # 30-39%
+		  2[0-9]) level_icon="󰁻" ;;         # 20-29%
+		  1[0-9]) level_icon="󰁺" ;;         # 10-19%
+		  [0-9])  level_icon="󰂎" ;;         # 0-9%
+		  *)      level_icon="" ;;          # Unknown/invalid
+		esac
 
-	echo "[ $level_icon $level_raw% ]"
-done 
+		echo "[ $level_icon $level_raw% ]"
+	done 
+fi
