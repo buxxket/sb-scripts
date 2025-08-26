@@ -8,8 +8,8 @@ if [ -d /sys/class/power_supply/BAT?* ]; then
 		status_raw="$(cat "$battery/status" 2>&1)"
 		level_raw="$(cat "$battery/capacity" 2>&1)"
 		
-		case status_raw in
-			"Charging") status_icon="󰂄" && echo "$status_icon $level_raw%" && exit 0 ;;
+		case $status_raw in
+			"Charging") status_icon="󰂄" && echo "[ $status_icon $level_raw% ]" && exit 0 ;;
 			*) "" ;;
 		esac
 
