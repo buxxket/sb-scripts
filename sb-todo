@@ -8,8 +8,8 @@ log_file="/tmp/dwm_todo_scroll_debug.log"
 
 # Handle dwmblocks mouse input
 case $BLOCK_BUTTON in
-  1)  pos=0 ;;  										# M1 -> reset scroll position
-  2)  kitty --class floatkitty micro "$todo_file" ;;	# M3 -> open in editor
+  1)  pos=0 ;;  					# M1 -> reset scroll position
+  2)  kitty --class floatkitty $EDITOR "$todo_file" ;;	# M3 -> open in editor
   3)  notify-send "$(cat "$todo_file")
 
  *** M3 to open in editor ***" ;;						# M2 -> noti with contents
