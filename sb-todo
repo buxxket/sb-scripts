@@ -1,24 +1,24 @@
 #!/bin/bash
 
 # Config
-todo_file="${XDG_DATA_HOME:-$HOME/.todo}/todo.md"
+todo_file="${XDG_DATA_HOME:-$HOME/.local/share}/todo/todo.md"
 width=40
 state_file="/tmp/dwm_todo_scroll.pos"
 log_file="/tmp/dwm_todo_scroll_debug.log"
 
 # Handle dwmblocks mouse input
 case $BLOCK_BUTTON in
-  1)  pos=0 ;;  					# M1 -> reset scroll position
-  2)  kitty --class floatkitty $EDITOR "$todo_file" ;;	# M3 -> open in editor
-  3)  notify-send "$(cat "$todo_file")
+1) pos=0 ;;                                         # M1 -> reset scroll position
+2) kitty --class floatkitty $EDITOR "$todo_file" ;; # M3 -> open in editor
+3) notify-send "$(cat "$todo_file")
 
- *** M3 to open in editor ***" ;;						# M2 -> noti with contents
-  7) echo "" > $state_file ;;
+ *** M3 to open in editor ***" ;; # M2 -> noti with contents
+7) echo "" >$state_file ;;
 esac
 
 # Exit early if no TODO file
 if [[ ! -f "$todo_file" ]]; then
-  echo "No TODO file" && exit 0
+	echo "No TODO file" && exit 0
 fi
 
 # Read and clean TODO text: remove comments, blank lines, trim whitespace
@@ -28,19 +28,19 @@ text=$(awk '
   { items = (items ? items " ... " : "") $0 }
   END { print items }
 ' "$todo_file")
-text=$(echo "$text" | xargs)  # trim leading/trailing whitespace
+text=$(echo "$text" | xargs) # trim leading/trailing whitespace
 
 # If nothing left, exit with no output
 if [[ -z "$text" ]]; then
-  exit 0
+	exit 0
 fi
 
 length=${#text}
 
 # If it fits, print the full string with trailing space and exit
-if (( length <= width )); then
-  echo "[ todo: $text ]"
-  exit 0
+if ((length <= width)); then
+	echo "[ todo: $text ]"
+	exit 0
 fi
 
 # Prepare scrolling text (looped)
@@ -48,23 +48,22 @@ scroll_text="$text    $text"
 
 # Load or init scroll position
 if [[ -f "$state_file" ]]; then
-  pos=$(<"$state_file")
+	pos=$(<"$state_file")
 else
-  pos=0
+	pos=0
 fi
-
 
 # Advance scroll position on normal update
 if [[ -z "$BLOCK_BUTTON" ]]; then
-  ((pos++))
+	((pos++))
 fi
 
 # Wrap scroll position
-(( pos < 0 )) && pos=$((length - 1))
-(( pos >= length + 4 )) && pos=0
+((pos < 0)) && pos=$((length - 1))
+((pos >= length + 4)) && pos=0
 
 # Save scroll position
-echo "$pos" > "$state_file" || echo "Failed to write state" >> "$log_file"
+echo "$pos" >"$state_file" || echo "Failed to write state" >>"$log_file"
 
 # Output the scrolling portion
 echo -n "[ todo: ${scroll_text:pos:width} ]"
