@@ -13,7 +13,7 @@ is_teams_sharing() {
 	if [ -z "$win_id" ]; then
 		shareIcon=""
 	else
-		shareIcon="󱎴"
+		shareIcon="󰈈"
 	fi
 }
 
@@ -56,14 +56,16 @@ else
 	vidIcon=""
 fi
 
-if [[ -n "$vidIcon" && -n "$micIcon" && -n "$sharingIcon" ]]; then
-	echo "[ $sharingIcon ∣ $vidIcon ∣ $micIcon  ]"
+is_teams_sharing
+
+if [[ -n "$vidIcon" && -n "$micIcon" && -n "$shareIcon" ]]; then
+	echo "[ $shareIcon ∣ $vidIcon ∣ $micIcon  ]"
 elif [[ -n "$vidIcon" && -n "$micIcon" ]]; then
 	echo "[ $vidIcon ∣ $micIcon ]"
-elif [[ -n "$vidIcon" && -n "$sharingIcon" ]]; then
-	echo "[ $sharingIcon ∣ $vidIcon ]"
-elif [[ -n "$micIcon" && -n "$sharingIcon" ]]; then
-	echo "[ $sharingIcon ∣ $micIcon ]"
+elif [[ -n "$vidIcon" && -n "$shareIcon" ]]; then
+	echo "[ $shareIcon ∣ $vidIcon ]"
+elif [[ -n "$micIcon" && -n "$shareIcon" ]]; then
+	echo "[ $shareIcon ∣ $micIcon ]"
 elif [[ -n "$shareIcon" || -n "$micIcon" || -n "$vidIcon" ]]; then
-	echo "[ "$shareIcon""$vidIcon""$micIcon" ]"
+	echo "[ $shareIcon$vidIcon$micIcon ]"
 fi
