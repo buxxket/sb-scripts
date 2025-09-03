@@ -1,5 +1,6 @@
 #!/bin/bash
 
+total_width=25
 width=25
 state_file="/tmp/dwm_music_scroll.pos"
 log_file="/tmp/dwm_music_scroll_debug.log"
@@ -10,8 +11,8 @@ touch "$DIR_MUSIC_PLAYERS"
 
 MUSIC_PLAYERS="$(cat "$DIR_MUSIC_PLAYERS" | tr ',' '\n')"
 if [[ -z "$MUSIC_PLAYERS" ]]; then
-    echo "No players in $DIR_MUSIC_PLAYERS"
-    exit 1
+	echo "No players in $DIR_MUSIC_PLAYERS"
+	exit 1
 else
 	pidof -x sb-music-watcher >/dev/null 2>&1 || sb-music-watcher >/dev/null 2>&1 &
 fi
@@ -19,35 +20,35 @@ fi
 META="{{ artist }} - {{ title }}"
 
 show_volume_bar() {
-    local vol=$1
-    local player=$2
-    dunstify -u low \
-        -h string:x-dunst-stack-tag:volume \
-        -h int:value:$vol \
-        "$player volume: $vol%"
+	local vol=$1
+	local player=$2
+	dunstify -u low \
+		-h string:x-dunst-stack-tag:volume \
+		-h int:value:$vol \
+		"$player volume: $vol%"
 }
 
 get_volume() {
-    # $1 = playerctl player name
-    local volstr
-    volstr=$(playerctl --player="$1" volume 2>/dev/null)
-    echo "$(printf "%.0f" "$(echo "$volstr * 100" | bc)")"
+	# $1 = playerctl player name
+	local volstr
+	volstr=$(playerctl --player="$1" volume 2>/dev/null)
+	echo "$(printf "%.0f" "$(echo "$volstr * 100" | bc)")"
 }
 
 get_wpctl_volume() {
-    # $1 = Pipewire node id
-    local volstr
-    volstr=$(wpctl get-volume "$1" 2>/dev/null | awk '{print $2}')
-    if [[ "$volstr" =~ ^0\.[0-9]+$ ]]; then
-        printf "%.0f" "$(echo "$volstr * 100" | bc -l)"
-    else
-        echo 0
-    fi
+	# $1 = Pipewire node id
+	local volstr
+	volstr=$(wpctl get-volume "$1" 2>/dev/null | awk '{print $2}')
+	if [[ "$volstr" =~ ^0\.[0-9]+$ ]]; then
+		printf "%.0f" "$(echo "$volstr * 100" | bc -l)"
+	else
+		echo 0
+	fi
 }
 
 get_node_ids() {
-    # $1 = process binary name (e.g. firefox, youtube-music)
-    pw-dump | jq -r "
+	# $1 = process binary name (e.g. firefox, youtube-music)
+	pw-dump | jq -r "
         .[] | select(
             .info.props.\"application.process.binary\" == \"$1\"
             and .info.props.\"media.class\" == \"Stream/Output/Audio\"
@@ -56,230 +57,230 @@ get_node_ids() {
 }
 
 volume_up_wpctl() {
-    # $1 = process binary name for node search (e.g. firefox, youtube-music)
-    for id in $(get_node_ids "$1"); do
-        wpctl set-volume "$id" 5%+
-        show_volume_bar "$(get_wpctl_volume "$id")" "$1"
-    done
+	# $1 = process binary name for node search (e.g. firefox, youtube-music)
+	for id in $(get_node_ids "$1"); do
+		wpctl set-volume "$id" 5%+
+		show_volume_bar "$(get_wpctl_volume "$id")" "$1"
+	done
 }
 
 volume_down_wpctl() {
-    # $1 = process binary name for node search
-    for id in $(get_node_ids "$1"); do
-        wpctl set-volume "$id" 5%-
-        show_volume_bar "$(get_wpctl_volume "$id")" "$1"
-    done
+	# $1 = process binary name for node search
+	for id in $(get_node_ids "$1"); do
+		wpctl set-volume "$id" 5%-
+		show_volume_bar "$(get_wpctl_volume "$id")" "$1"
+	done
 }
 
 volume_up_playerctl() {
-    # $1 = playerctl player name
-    playerctl --player="$1" volume 0.05+ && \
-        show_volume_bar "$(get_volume "$1")" "$1"
+	# $1 = playerctl player name
+	playerctl --player="$1" volume 0.05+ &&
+		show_volume_bar "$(get_volume "$1")" "$1"
 }
 
 volume_down_playerctl() {
-    # $1 = playerctl player name
-    playerctl --player="$1" volume 0.05- && \
-        show_volume_bar "$(get_volume "$1")" "$1"
+	# $1 = playerctl player name
+	playerctl --player="$1" volume 0.05- &&
+		show_volume_bar "$(get_volume "$1")" "$1"
 }
 
 find_priority_player() {
-    local desired_status="$1"
-    for PLAYER in $MUSIC_PLAYERS; do
-        STATUS="$(playerctl --player=$PLAYER status 2>/dev/null)"
-        if [ "$STATUS" = "$desired_status" ]; then
-            echo "$PLAYER"
-            return
-        fi
-    done
+	local desired_status="$1"
+	for PLAYER in $MUSIC_PLAYERS; do
+		STATUS="$(playerctl --player=$PLAYER status 2>/dev/null)"
+		if [ "$STATUS" = "$desired_status" ]; then
+			echo "$PLAYER"
+			return
+		fi
+	done
 }
 
 handle_play_pause() {
-    local TARGET_PLAYER
-    TARGET_PLAYER="$(find_priority_player Playing)"
-    [ -z "$TARGET_PLAYER" ] && TARGET_PLAYER="$(find_priority_player Paused)"
-    [ -z "$TARGET_PLAYER" ] && exit 0
+	local TARGET_PLAYER
+	TARGET_PLAYER="$(find_priority_player Playing)"
+	[ -z "$TARGET_PLAYER" ] && TARGET_PLAYER="$(find_priority_player Paused)"
+	[ -z "$TARGET_PLAYER" ] && exit 0
 
-    STATUS="$(playerctl --player=$TARGET_PLAYER status 2>/dev/null)"
-    playerctl play-pause --player "$TARGET_PLAYER"
+	STATUS="$(playerctl --player=$TARGET_PLAYER status 2>/dev/null)"
+	playerctl play-pause --player "$TARGET_PLAYER"
 
-    # If we just resumed a paused higher-priority player, pause lower-priority ones
-    if [ "$STATUS" = "Paused" ]; then
-        SKIP=1
-        for PLAYER in $MUSIC_PLAYERS; do
-            [ "$PLAYER" = "$TARGET_PLAYER" ] && SKIP=0 && continue
-            [ "$SKIP" -eq 1 ] && continue
-            STATUS2="$(playerctl --player=$PLAYER status 2>/dev/null)"
-            if [ "$STATUS2" = "Playing" ]; then
-                playerctl pause --player="$PLAYER"
-            fi
-        done
-    fi
+	# If we just resumed a paused higher-priority player, pause lower-priority ones
+	if [ "$STATUS" = "Paused" ]; then
+		SKIP=1
+		for PLAYER in $MUSIC_PLAYERS; do
+			[ "$PLAYER" = "$TARGET_PLAYER" ] && SKIP=0 && continue
+			[ "$SKIP" -eq 1 ] && continue
+			STATUS2="$(playerctl --player=$PLAYER status 2>/dev/null)"
+			if [ "$STATUS2" = "Playing" ]; then
+				playerctl pause --player="$PLAYER"
+			fi
+		done
+	fi
 }
 
 handle_previous() {
-    local TARGET_PLAYER
-    TARGET_PLAYER="$(find_priority_player Playing)"
-    [ -z "$TARGET_PLAYER" ] && TARGET_PLAYER="$(find_priority_player Paused)"
-    [ -z "$TARGET_PLAYER" ] && exit 0
-    playerctl previous --player "$TARGET_PLAYER"
+	local TARGET_PLAYER
+	TARGET_PLAYER="$(find_priority_player Playing)"
+	[ -z "$TARGET_PLAYER" ] && TARGET_PLAYER="$(find_priority_player Paused)"
+	[ -z "$TARGET_PLAYER" ] && exit 0
+	playerctl previous --player "$TARGET_PLAYER"
 }
 
 handle_next() {
-    local TARGET_PLAYER
-    TARGET_PLAYER="$(find_priority_player Playing)"
-    [ -z "$TARGET_PLAYER" ] && TARGET_PLAYER="$(find_priority_player Paused)"
-    [ -z "$TARGET_PLAYER" ] && exit 0
-    playerctl next --player "$TARGET_PLAYER"
+	local TARGET_PLAYER
+	TARGET_PLAYER="$(find_priority_player Playing)"
+	[ -z "$TARGET_PLAYER" ] && TARGET_PLAYER="$(find_priority_player Paused)"
+	[ -z "$TARGET_PLAYER" ] && exit 0
+	playerctl next --player "$TARGET_PLAYER"
 }
 
 handle_volume_up() {
-    local TARGET_PLAYER
-    TARGET_PLAYER="$(find_priority_player Playing)"
-    [ -z "$TARGET_PLAYER" ] && TARGET_PLAYER="$(find_priority_player Paused)"
-    [ -z "$TARGET_PLAYER" ] && exit 0
+	local TARGET_PLAYER
+	TARGET_PLAYER="$(find_priority_player Playing)"
+	[ -z "$TARGET_PLAYER" ] && TARGET_PLAYER="$(find_priority_player Paused)"
+	[ -z "$TARGET_PLAYER" ] && exit 0
 
-    case "$TARGET_PLAYER" in
-        chromium)
-            volume_up_wpctl "youtube-music"
-            ;;
-        firefox)
-            volume_up_wpctl "firefox"
-            ;;
-        *)
-            volume_up_playerctl "$TARGET_PLAYER"
-            ;;
-    esac
+	case "$TARGET_PLAYER" in
+	chromium)
+		volume_up_wpctl "youtube-music"
+		;;
+	firefox)
+		volume_up_wpctl "firefox"
+		;;
+	*)
+		volume_up_playerctl "$TARGET_PLAYER"
+		;;
+	esac
 }
 
 handle_volume_down() {
-    local TARGET_PLAYER
-    TARGET_PLAYER="$(find_priority_player Playing)"
-    [ -z "$TARGET_PLAYER" ] && TARGET_PLAYER="$(find_priority_player Paused)"
-    [ -z "$TARGET_PLAYER" ] && exit 0
+	local TARGET_PLAYER
+	TARGET_PLAYER="$(find_priority_player Playing)"
+	[ -z "$TARGET_PLAYER" ] && TARGET_PLAYER="$(find_priority_player Paused)"
+	[ -z "$TARGET_PLAYER" ] && exit 0
 
-    case "$TARGET_PLAYER" in
-        chromium)
-            volume_down_wpctl "youtube-music"
-            ;;
-        firefox)
-            volume_down_wpctl "firefox"
-            ;;
-        *)
-            volume_down_playerctl "$TARGET_PLAYER"
-            ;;
-    esac
+	case "$TARGET_PLAYER" in
+	chromium)
+		volume_down_wpctl "youtube-music"
+		;;
+	firefox)
+		volume_down_wpctl "firefox"
+		;;
+	*)
+		volume_down_playerctl "$TARGET_PLAYER"
+		;;
+	esac
 }
 
 handle_edit_script() {
-    kitty --class floatkitty micro ~/suckless/sb-scripts/sb-music
+	kitty --class floatkitty micro ~/suckless/sb-scripts/sb-music
 }
 
 refresh_dwmblocks() {
-    pkill -RTMIN+5 dwmblocks
+	pkill -RTMIN+5 dwmblocks
 }
 
 # Button handler
 case $BLOCK_BUTTON in
-    1) handle_play_pause && refresh_dwmblocks ;;
-    2) handle_previous && refresh_dwmblocks ;;
-    3) handle_next && refresh_dwmblocks ;;
-    4) handle_volume_up && refresh_dwmblocks ;;
-    5) handle_volume_down && refresh_dwmblocks ;;
-    6) handle_edit_script && refresh_dwmblocks ;;
-    7) echo "" > $state_file && refresh_dwmblocks ;;
+1) handle_play_pause && refresh_dwmblocks ;;
+2) handle_previous && refresh_dwmblocks ;;
+3) handle_next && refresh_dwmblocks ;;
+4) handle_volume_up && refresh_dwmblocks ;;
+5) handle_volume_down && refresh_dwmblocks ;;
+6) handle_edit_script && refresh_dwmblocks ;;
+7) echo "" >$state_file && refresh_dwmblocks ;;
 esac
 
 # Display currently playing or paused track info
 found_playing=0
 for PLAYER in $MUSIC_PLAYERS; do
-    PLAYERICON="$PLAYER"
-    [ "$PLAYER" = "chromium" ] && PLAYERICON="[yt-music]"
-    STATUS="$(timeout 1 playerctl --player $PLAYER status 2>/dev/null)"
-    [ "$STATUS" = "No players found" ] && continue
-    if [ "$STATUS" = "Playing" ]; then
-        SONG="$(timeout 1 playerctl metadata --player $PLAYER --format "$META" 2>/dev/null)"
-        if [[ -z "$SONG" ]]; then
-          break
-        fi
+	PLAYERICON="$PLAYER"
+	[ "$PLAYER" = "chromium" ] && PLAYERICON="[yt-music]"
+	STATUS="$(timeout 1 playerctl --player $PLAYER status 2>/dev/null)"
+	[ "$STATUS" = "No players found" ] && continue
+	if [ "$STATUS" = "Playing" ]; then
+		SONG="$(timeout 1 playerctl metadata --player $PLAYER --format "$META" 2>/dev/null)"
+		if [[ -z "$SONG" ]]; then
+			break
+		fi
 
-        length=${#SONG}
-
-		if (( length <= width )); then
-		  # Calculate padding
-		  left_pad=$(( (width - length) / 2 ))
-		  right_pad=$(( width - length - left_pad ))
-		  printf -v padded_song "%*s%s%*s" "$left_pad" "" "$SONG" "$right_pad" ""
-		  echo "[ $PLAYERICON: $padded_song ]"
-		  found_playing=1
-		  break
+		length=${#SONG}
+		width=$((total_width - ${#PLAYER}))
+		if ((length <= width)); then
+			# Calculate padding
+			left_pad=$(((width - length) / 2))
+			right_pad=$((width - length - left_pad))
+			printf -v padded_song "%*s%s%*s" "$left_pad" "" "$SONG" "$right_pad" ""
+			echo "[ $PLAYERICON: $padded_song ]"
+			found_playing=1
+			break
 		fi
 
 		scroll_text="~ $SONG  ~ $SONG"
 
 		if [[ -f "$state_file" ]]; then
-		  pos=$(<"$state_file")
+			pos=$(<"$state_file")
 		else
-		  pos=0
+			pos=0
 		fi
 
 		if [[ -z "$BLOCK_BUTTON" ]]; then
-		  ((pos++))
+			((pos++))
 		fi
 
-		(( pos < 0 )) && pos=$((length - 1))
-		(( pos >= length + 4 )) && pos=0
+		((pos < 0)) && pos=$((length - 1))
+		((pos >= length + 4)) && pos=0
 
-		echo "$pos" > "$state_file" || echo "Failed to write state" >> "$log_file"
+		echo "$pos" >"$state_file" || echo "Failed to write state" >>"$log_file"
 
 		echo -n "[ $PLAYERICON: ${scroll_text:pos:width} ]"
 
 		found_playing=1
 		break
-    fi
+	fi
 done
 
 if [ $found_playing -eq 0 ]; then
-    for PLAYER in $MUSIC_PLAYERS; do
-        PLAYERICON="$PLAYER"
-        [ "$PLAYER" = "chromium" ] && PLAYERICON="[yt-music]"
-        STATUS="$(timeout 1 playerctl --player $PLAYER status 2>/dev/null)"
-        [ "$STATUS" = "No players found" ] && continue
-        if [ "$STATUS" = "Paused" ]; then
-            SONG="$(timeout 1 playerctl metadata --player $PLAYER --format "$META" 2>/dev/null)"
-	        if [[ -z "$SONG" ]]; then
-	          break
-	        fi
-	        
-	        length=${#SONG}
-	        
-	        if (( length <= width )); then
-	            # Calculate padding
-	            left_pad=$(( (width - length) / 2 ))
-	            right_pad=$(( width - length - left_pad ))
-	            printf -v padded_song "%*s%s%*s" "$left_pad" "" "$SONG" "$right_pad" ""
-	            trimmed_song="${padded_song:4}"   # Remove the first 3 chars (for pause icon)
-	            echo "[ $PLAYERICON: [󰏤] $trimmed_song ]"
-	            found_playing=1
-	            break
-	        fi
-	        
-	        scroll_text="~ $SONG  ~ $SONG"
-	        
-	        if [[ -f "$state_file" ]]; then
-	          pos=$(<"$state_file")
-	        else
-	          pos=0
-	        fi
+	for PLAYER in $MUSIC_PLAYERS; do
+		PLAYERICON="$PLAYER"
+		[ "$PLAYER" = "chromium" ] && PLAYERICON="[yt-music]"
+		STATUS="$(timeout 1 playerctl --player $PLAYER status 2>/dev/null)"
+		[ "$STATUS" = "No players found" ] && continue
+		if [ "$STATUS" = "Paused" ]; then
+			SONG="$(timeout 1 playerctl metadata --player $PLAYER --format "$META" 2>/dev/null)"
+			if [[ -z "$SONG" ]]; then
+				break
+			fi
+
+			length=${#SONG}
+			width=$((total_width - ${#PLAYER}))
+
+			if ((length <= width)); then
+				# Calculate padding
+				left_pad=$(((width - length) / 2))
+				right_pad=$((width - length - left_pad))
+				printf -v padded_song "%*s%s%*s" "$left_pad" "" "$SONG" "$right_pad" ""
+				trimmed_song="${padded_song:4}" # Remove the first 3 chars (for pause icon)
+				echo "[ $PLAYERICON: [󰏤] $trimmed_song ]"
+				found_playing=1
+				break
+			fi
+
+			scroll_text="~ $SONG  ~ $SONG"
+
+			if [[ -f "$state_file" ]]; then
+				pos=$(<"$state_file")
+			else
+				pos=0
+			fi
 
 			trimmed_song="${scroll_text:pos:width}"
 			trimmed_song="${trimmed_song:4}"
-			
-	        echo -n "[ $PLAYERICON: [󰏤] $trimmed_song ]"
 
-	        found_playing=1
-	        break
-        fi
-    done
+			echo -n "[ $PLAYERICON: [󰏤] $trimmed_song ]"
+
+			found_playing=1
+			break
+		fi
+	done
 fi
-

@@ -2,7 +2,9 @@
 
 # Config
 todo_file="${XDG_DATA_HOME:-$HOME/.local/share}/todo/todo.md"
-width=40
+leader="todo: "
+total_width=20
+width=$((total_width - ${#leader}))
 state_file="/tmp/dwm_todo_scroll.pos"
 log_file="/tmp/dwm_todo_scroll_debug.log"
 
@@ -39,7 +41,7 @@ length=${#text}
 
 # If it fits, print the full string with trailing space and exit
 if ((length <= width)); then
-	echo "[ todo: $text ]"
+	echo "[ $leader$text ]"
 	exit 0
 fi
 
@@ -66,4 +68,4 @@ fi
 echo "$pos" >"$state_file" || echo "Failed to write state" >>"$log_file"
 
 # Output the scrolling portion
-echo -n "[ todo: ${scroll_text:pos:width} ]"
+echo -n "[ $leader${scroll_text:pos:width} ]"
