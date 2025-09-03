@@ -1,44 +1,53 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 PIDFILE="$HOME/.mic-tone-keepalive.pid"
 PLAY_CMD="play -nq synth sin 1"
 
 case $BLOCK_BUTTON in
-    1) wpctl set-mute @DEFAULT_SOURCE@ toggle ;; # Toggle mic mute
-    3) pwvucontrol ;;
+1) wpctl set-mute @DEFAULT_SOURCE@ toggle ;; # Toggle mic mute
+3) pwvucontrol ;;
 esac
 
+is_teams_sharing() {
+	win_id=$(xdotool search --name "Screen is being shared" | head -n1)
+	if [ -z "$win_id" ]; then
+		shareIcon=""
+	else
+		shareIcon="󱎴"
+	fi
+}
+
 is_tone_running() {
-    [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null
+	[ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null
 }
 
 start_tone() {
-    if ! is_tone_running; then
-        $PLAY_CMD >/dev/null 2>&1 &
-        echo $! > "$PIDFILE"
-    fi
+	if ! is_tone_running; then
+		$PLAY_CMD >/dev/null 2>&1 &
+		echo $! >"$PIDFILE"
+	fi
 }
 
 stop_tone() {
-    if is_tone_running; then
-        kill "$(cat "$PIDFILE")" 2>/dev/null
-        rm -f "$PIDFILE"
-    fi
+	if is_tone_running; then
+		kill "$(cat "$PIDFILE")" 2>/dev/null
+		rm -f "$PIDFILE"
+	fi
 }
 
 vol="$(timeout 1 wpctl get-volume @DEFAULT_SOURCE@ 2>/dev/null)"
 
 if wpctl status | grep -q "<"; then
-    if [ "$vol" != "${vol%\[MUTED\]}" ]; then
-        start_tone
-        micIcon="󰍭"
-    else
-        start_tone
-        micIcon="󰍬"
-    fi
+	if [ "$vol" != "${vol%\[MUTED\]}" ]; then
+		start_tone
+		micIcon="󰍭"
+	else
+		start_tone
+		micIcon="󰍬"
+	fi
 else
-    stop_tone
-    micIcon=""
+	stop_tone
+	micIcon=""
 fi
 
 if [[ "$(timeout 1 fuser /dev/video* 2>/dev/null)" != '' ]]; then
@@ -47,9 +56,14 @@ else
 	vidIcon=""
 fi
 
-if [[ -n "$micIcon" && -n "$vidIcon" ]]; then
-	echo "[ "$vidIcon" ∣ "$micIcon" ]"
-	exit 0
-elif [[ -n "$micIcon" || -n "$vidIcon" ]]; then
-	echo "[ "$vidIcon""$micIcon" ]"
+if [[ -n "$vidIcon" && -n "$micIcon" && -n "$sharingIcon" ]]; then
+	echo "[ $sharingIcon ∣ $vidIcon ∣ $micIcon  ]"
+elif [[ -n "$vidIcon" && -n "$micIcon" ]]; then
+	echo "[ $vidIcon ∣ $micIcon ]"
+elif [[ -n "$vidIcon" && -n "$sharingIcon" ]]; then
+	echo "[ $sharingIcon ∣ $vidIcon ]"
+elif [[ -n "$micIcon" && -n "$sharingIcon" ]]; then
+	echo "[ $sharingIcon ∣ $micIcon ]"
+elif [[ -n "$shareIcon" || -n "$micIcon" || -n "$vidIcon" ]]; then
+	echo "[ "$shareIcon""$vidIcon""$micIcon" ]"
 fi
