@@ -59,7 +59,7 @@ fi
 is_teams_sharing
 
 if [[ -n "$vidIcon" && -n "$micIcon" && -n "$shareIcon" ]]; then
-	echo "[ $shareIcon ∣ $vidIcon ∣ $micIcon  ]"
+	echo "[ $shareIcon ∣ $vidIcon ∣ $micIcon ]"
 elif [[ -n "$vidIcon" && -n "$micIcon" ]]; then
 	echo "[ $vidIcon ∣ $micIcon ]"
 elif [[ -n "$vidIcon" && -n "$shareIcon" ]]; then
