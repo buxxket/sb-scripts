@@ -1,7 +1,6 @@
 #!/bin/bash
 
 total_width=25
-width=25
 state_file="/tmp/dwm_music_scroll.pos"
 log_file="/tmp/dwm_music_scroll_debug.log"
 
@@ -281,6 +280,8 @@ if [ $found_playing -eq 0 ]; then
 
 			found_playing=1
 			break
+		else
+			echo "[ no music :( ]"
 		fi
 	done
 fi

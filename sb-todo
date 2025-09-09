@@ -3,7 +3,7 @@
 # Config
 todo_file="${XDG_DATA_HOME:-$HOME/.local/share}/todo/todo.md"
 leader="todo: "
-total_width=20
+total_width=40
 width=$((total_width - ${#leader}))
 state_file="/tmp/dwm_todo_scroll.pos"
 log_file="/tmp/dwm_todo_scroll_debug.log"
