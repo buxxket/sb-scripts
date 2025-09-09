@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 total_width=25
 state_file="/tmp/dwm_music_scroll.pos"
