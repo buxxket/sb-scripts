@@ -23,14 +23,39 @@ if [[ ! -f "$todo_file" ]]; then
 	echo "No TODO file" && exit 0
 fi
 
-# Read and clean TODO text: remove comments, blank lines, trim whitespace
-text=$(awk '
-  /^[[:space:]]*#/ { next }   # skip comment lines
-  /^[[:space:]]*$/ { next }   # skip blank lines
-  { items = (items ? items " ... " : "") $0 }
-  END { print items }
-' "$todo_file")
-text=$(echo "$text" | xargs) # trim leading/trailing whitespace
+# Function to extract items between two headings
+extract_items() {
+	awk -v start="$1" -v stop="$2" '
+        BEGIN { in_section=0 }
+        $0 ~ start { in_section=1; next }
+        $0 ~ stop && in_section { exit }
+        in_section && !/^[[:space:]]*#/ && !/^[[:space:]]*$/ { print $0 }
+    ' "$todo_file"
+}
+
+# Get items under "## now" and above "## backlog"
+items=$(extract_items "^## now" "^## backlog")
+
+# If empty, fallback to backlog section
+if [[ -z "$items" ]]; then
+	items=$(awk '
+        BEGIN { in_backlog=0 }
+        /^## backlog/ { in_backlog=1; next }
+        /^## / && in_backlog { exit }
+        in_backlog && !/^[[:space:]]*#/ && !/^[[:space:]]*$/ { print $0 }
+    ' "$todo_file")
+fi
+
+# If still nothing, exit
+if [[ -z "$items" ]]; then
+	exit 0
+fi
+
+# Concatenate all items into a single string, separated by " ... "
+text=$(echo "$items" | awk 'ORS=" ... "' | sed 's/ ... $//')
+
+# Trim leading/trailing whitespace
+text=$(echo "$text" | xargs)
 
 # If nothing left, exit with no output
 if [[ -z "$text" ]]; then
@@ -46,7 +71,7 @@ if ((length <= width)); then
 fi
 
 # Prepare scrolling text (looped)
-scroll_text="$text    $text"
+scroll_text="~ $text   ~ $text"
 
 # Load or init scroll position
 if [[ -f "$state_file" ]]; then
