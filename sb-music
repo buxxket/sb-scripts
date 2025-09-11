@@ -11,9 +11,7 @@ touch "$DIR_MUSIC_PLAYERS"
 MUSIC_PLAYERS="$(cat "$DIR_MUSIC_PLAYERS" | tr ',' '\n')"
 if [[ -z "$MUSIC_PLAYERS" ]]; then
 	echo "No players in $DIR_MUSIC_PLAYERS"
-	exit 1
-else
-	pidof -x sb-music-watcher >/dev/null 2>&1 || sb-music-watcher >/dev/null 2>&1 &
+	exit 0
 fi
 
 META="{{ artist }} - {{ title }}"
@@ -240,6 +238,10 @@ for PLAYER in $MUSIC_PLAYERS; do
 done
 
 if [ $found_playing -eq 0 ]; then
+	if ! playerctl status >/dev/null 2>&1; then
+		echo "[ no music :( ]"
+		exit 0
+	fi
 	for PLAYER in $MUSIC_PLAYERS; do
 		PLAYERICON="$PLAYER"
 		[ "$PLAYER" = "chromium" ] && PLAYERICON="[yt-music]"
@@ -280,8 +282,6 @@ if [ $found_playing -eq 0 ]; then
 
 			found_playing=1
 			break
-		else
-			echo "[ no music :( ]"
 		fi
 	done
 fi
