@@ -12,7 +12,7 @@ is_teams_sharing() {
 	win_id=$(xdotool search --name "Screen is being shared" | head -n1)
 	if [ -z "$win_id" ]; then
 		shareIcon=""
-		dunstctl set-paused false
+		dunst &
 		if [[ "$TO_NOTIFY" -eq "1" ]]; then
 			dunstify "Sharing stopped"
 			TO_NOTIFY=0
@@ -23,7 +23,7 @@ is_teams_sharing() {
 			dunstify "Screen share started"
 			TO_NOTIFY=1
 		fi
-		dunstctl set-paused true
+		killall dunst
 	fi
 }
 
@@ -66,7 +66,7 @@ else
 	vidIcon=""
 fi
 
-is_teams_sharing
+# is_teams_sharing
 
 if [[ -n "$vidIcon" && -n "$micIcon" && -n "$shareIcon" ]]; then
 	echo "[ $shareIcon ∣ $vidIcon ∣ $micIcon ]"
