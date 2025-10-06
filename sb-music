@@ -120,8 +120,8 @@ handle_previous() {
 	TARGET_PLAYER="$(find_priority_player Playing)"
 	[ -z "$TARGET_PLAYER" ] && TARGET_PLAYER="$(find_priority_player Paused)"
 	[ -z "$TARGET_PLAYER" ] && exit 0
-	playerctl previous --player "$TARGET_PLAYER"
 	pos=0
+	playerctl previous --player "$TARGET_PLAYER"
 }
 
 handle_next() {
@@ -129,8 +129,8 @@ handle_next() {
 	TARGET_PLAYER="$(find_priority_player Playing)"
 	[ -z "$TARGET_PLAYER" ] && TARGET_PLAYER="$(find_priority_player Paused)"
 	[ -z "$TARGET_PLAYER" ] && exit 0
-	playerctl next --player "$TARGET_PLAYER"
 	pos=0
+	playerctl next --player "$TARGET_PLAYER"
 }
 
 handle_volume_up() {
