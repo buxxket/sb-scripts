@@ -120,7 +120,7 @@ handle_previous() {
 	TARGET_PLAYER="$(find_priority_player Playing)"
 	[ -z "$TARGET_PLAYER" ] && TARGET_PLAYER="$(find_priority_player Paused)"
 	[ -z "$TARGET_PLAYER" ] && exit 0
-	pos=0
+	echo 0 >"$state_file" || echo "Failed to write state" >>"$log_file"
 	playerctl previous --player "$TARGET_PLAYER"
 }
 
@@ -129,7 +129,7 @@ handle_next() {
 	TARGET_PLAYER="$(find_priority_player Playing)"
 	[ -z "$TARGET_PLAYER" ] && TARGET_PLAYER="$(find_priority_player Paused)"
 	[ -z "$TARGET_PLAYER" ] && exit 0
-	pos=0
+	echo 0 >"$state_file" || echo "Failed to write state" >>"$log_file"
 	playerctl next --player "$TARGET_PLAYER"
 }
 
