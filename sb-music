@@ -241,7 +241,7 @@ done
 
 if [ $found_playing -eq 0 ]; then
 	if ! playerctl status >/dev/null 2>&1; then
-		echo "[ no music :( ]"
+		# echo "[ no music :( ]"
 		exit 0
 	fi
 	for PLAYER in $MUSIC_PLAYERS; do
