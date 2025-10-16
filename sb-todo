@@ -51,11 +51,8 @@ if [[ -z "$items" ]]; then
 	exit 0
 fi
 
-# Concatenate all items into a single string, separated by " ... "
-text=$(echo "$items" | awk 'ORS=" ... "' | sed 's/ ... $//')
-
-# Trim leading/trailing whitespace
-text=$(echo "$text" | xargs)
+# Concatenate all items into a single string, separated by "  "
+text=$(echo "$items" | awk 'ORS="  "' | sed 's/  $//')
 
 # If nothing left, exit with no output
 if [[ -z "$text" ]]; then
