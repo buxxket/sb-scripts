@@ -47,7 +47,7 @@ stop_tone() {
 
 vol="$(timeout 1 wpctl get-volume @DEFAULT_SOURCE@ 2>/dev/null)"
 
-if wpctl status | grep -q "<"; then
+if wpctl status | grep -q "< Scarlett Solo USB"; then
 	if [ "$vol" != "${vol%\[MUTED\]}" ]; then
 		start_tone
 		micIcon="󰍭"
