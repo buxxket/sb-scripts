@@ -4,8 +4,23 @@ PIDFILE="$HOME/.mic-tone-keepalive.pid"
 PLAY_CMD="play -nq synth sin 1"
 
 case $BLOCK_BUTTON in
-1) wpctl set-mute @DEFAULT_SOURCE@ toggle ;; # Toggle mic mute
-3) pwvucontrol ;;
+1)
+	streamcam_id=$(wpctl status | grep "StreamCam Analog Stereo" | grep -oP '\d+(?=\.)' | head -1)
+	scarlett_id=$(wpctl status | grep "Scarlett Solo USB" | grep -oP '\d+(?=\.)' | head -1)
+
+	if [[ -n "$streamcam_id" ]]; then
+		wpctl set-mute "$streamcam_id" toggle
+	fi
+
+	if [[ -n "$scarlett_id" ]]; then
+		wpctl set-mute "$scarlett_id" toggle
+	else
+		wpctl set-mute @DEFAULT_SOURCE@ toggle
+	fi
+	;;
+3)
+	pwvucontrol
+	;;
 esac
 
 is_teams_sharing() {
