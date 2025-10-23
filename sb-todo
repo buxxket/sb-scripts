@@ -8,14 +8,37 @@ width=$((total_width - ${#leader}))
 state_file="/tmp/dwm_todo_scroll.pos"
 log_file="/tmp/dwm_todo_scroll_debug.log"
 
-# Handle dwmblocks mouse input
 case $BLOCK_BUTTON in
-1) pos=0 ;;                                         # M1 -> reset scroll position
-2) kitty --class floatkitty $EDITOR "$todo_file" ;; # M3 -> open in editor
-3) notify-send "$(cat "$todo_file")
+1)
+	pos=0
+	;; # M1 -> reset scroll position
+2)
+	kitty -T "todo list" --class floatkitty "$EDITOR" "$todo_file" &
+	kitty_pid=$!
 
- *** M3 to open in editor ***" ;; # M2 -> noti with contents
-7) echo "" >$state_file ;;
+	# Wait for the kitty window to appear with either the name or the PID
+	win_id=""
+	for i in {1..50}; do
+		# Try matching by PID first, fallback to name "todo"
+		win_id=$(xdotool search --onlyvisible --pid "$kitty_pid" 2>/dev/null | head -n1)
+		[ -z "$win_id" ] && win_id=$(xdotool search --onlyvisible --name "todo list" 2>/dev/null | head -n1)
+		[ -n "$win_id" ] && break
+		sleep 0.1
+	done
+
+	if [ -n "$win_id" ]; then
+		xdotool windowactivate "$win_id"
+		xdotool key --window "$win_id" super+ctrl+shift+s
+	else
+		notify-send "Kitty window not found!" # Optional error notification
+	fi
+	;;
+3)
+	notify-send "$(cat "$todo_file")\n\n *** M3 to open in editor ***"
+	;; # M3 -> noti with contents
+7)
+	echo "" >"$state_file"
+	;;
 esac
 
 # Exit early if no TODO file
